@@ -1,3 +1,4 @@
+from Controller.dialogs import no_export_path_warning
 from View.metricsGUI import Ui_MainWindow
 from PyQt5 import QtWidgets, QtCore
 import sys
@@ -7,26 +8,54 @@ class WindowEXEC:
     REGIONS = {'Hub 1': 1, 'Hub 2': 2, 'Hub 3': 3, 'Hub 4': 4, 'Hub 5': 5, 'Canada': 6}
 
     def __init__(self):
+        # setup window from the Qt generated Ui_MainWindow class
         app = QtWidgets.QApplication(sys.argv)
         window = QtWidgets.QMainWindow()
+
+        # create class instance variable to reference the ui
         self.ui = Ui_MainWindow()
         self.ui.setupUi(window)
 
-        self.get_region_selection()
-        self.metrics_picker()
+        # signal methods
+        self.trigger_metrics_picker()
         self.trigger_file_selection_dialog()
-        self.import_button_triggered()
-        self.detect_list_selected()
-        self.remove_button_triggered()
+        self.trigger_import_button()
+        self.trigger_list_item_selected()
+        self.trigger_remove_button()
         self.trigger_file_save_dialog()
-        self.export_button_triggered()
+        self.trigger_export_button()
 
+        # show window and execute application
         window.show()
         sys.exit(app.exec_())
 
-    def metrics_picker(self):
+    """
+        -- GUI Signal Methods --
+    """
+    def trigger_file_selection_dialog(self):
+        self.ui.fileDialogButton.clicked.connect(self.open_file_dialog)
+
+    def trigger_import_button(self):
+        self.ui.importFileButton.clicked.connect(self.import_file_path)
+
+    def trigger_list_item_selected(self):
+        self.ui.filePathList.itemClicked.connect(self.enable_remove_button)
+
+    def trigger_remove_button(self):
+        self.ui.removeButton.clicked.connect(self.remove_file_from_list)
+
+    def trigger_file_save_dialog(self):
+        self.ui.fileExportDialog.clicked.connect(self.open_save_file_dialog)
+
+    def trigger_export_button(self):
+        self.ui.exportButton.clicked.connect(self.export_aggregated_metrics_document)
+
+    def trigger_metrics_picker(self):
         self.ui.metricsSelector.currentTextChanged.connect(self.get_metric_type)
 
+    """
+        -- Class Methods --
+    """
     def get_metric_type(self):
         return self.ui.metricsSelector.currentText()
 
@@ -47,9 +76,6 @@ class WindowEXEC:
 
         return region
 
-    def trigger_file_selection_dialog(self):
-        self.ui.fileDialogButton.clicked.connect(self.open_file_dialog)
-
     def open_file_dialog(self):
         dig = QtWidgets.QFileDialog()
         dig.setFileMode(QtWidgets.QFileDialog.AnyFile)
@@ -61,32 +87,20 @@ class WindowEXEC:
     def show_file_name(self, filepath):
         self.ui.fileSelectInput.setText(filepath[0])
 
-    def import_button_triggered(self):
-        self.ui.importFileButton.clicked.connect(self.import_file_path)
-
     def import_file_path(self):
         if self.ui.fileSelectInput.text() != '':
             self.ui.filePathList.addItem(QtWidgets.QListWidgetItem(self.ui.fileSelectInput.text()))
             self.ui.fileSelectInput.clear()
             self.ui.fileSelectInput.repaint()
 
-    def detect_list_selected(self):
-        self.ui.filePathList.itemClicked.connect(self.enable_remove_button)
-
     def enable_remove_button(self):
         if len(self.ui.filePathList.selectedItems()) > 0:
             self.ui.removeButton.setEnabled(True)
-
-    def remove_button_triggered(self):
-        self.ui.removeButton.clicked.connect(self.remove_file_from_list)
 
     def remove_file_from_list(self):
         items = self.ui.filePathList.selectedItems()
         for item in items:
             self.ui.filePathList.takeItem(self.ui.filePathList.row(item))
-
-    def trigger_file_save_dialog(self):
-        self.ui.fileExportDialog.clicked.connect(self.open_save_file_dialog)
 
     def open_save_file_dialog(self):
         dig = QtWidgets.QFileDialog()
@@ -97,26 +111,11 @@ class WindowEXEC:
         self.ui.fileExportPathInput.setText(filepath)
         self.ui.fileExportPathInput.repaint()
 
-    def export_button_triggered(self):
-        self.ui.exportButton.clicked.connect(self.export_aggregated_metrics_document)
-
     def export_aggregated_metrics_document(self):
         path = self.ui.fileExportPathInput.text()
         if path != '':
             # todo: Create the method to call the appropriate method.
             pass
         else:
-            self.show_no_export_path_warning_dialog()
+            no_export_path_warning()
 
-    def __show_no_export_path_warning_dialog(self):
-        msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
-
-        msg.setText('No File Path Selected')
-        msg.setInformativeText('Please select a file path to export the document')
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msg.exec_()
-
-
-if __name__ == "__main__":
-    win = WindowEXEC()
